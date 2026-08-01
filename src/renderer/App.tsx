@@ -22,6 +22,7 @@ import MetadataForm from './components/MetadataForm';
 import TmdbSearch from './components/TmdbSearch';
 import SeriesMatrix from './components/SeriesMatrix';
 import OutputSettings from './components/OutputSettings';
+import SubtitleManager from './components/SubtitleManager';
 import CoverPickerModal from './components/CoverPickerModal';
 import PatternSelector from './components/PatternSelector';
 import SettingsModal from './components/SettingsModal';
@@ -208,7 +209,7 @@ const App: React.FC = () => {
 
         let commonTitle = commonSegments.join(' ').trim();
         commonTitle = commonTitle
-          .replace(/\s+(S\d+|Season\s*\d+|Staffel\s*\d+|E\d+|Episode\s*\d+)$/i, '')
+          .replace(/\s+(S\d+|Season\s*\d+|Staffel\s*\d+|E\d+|Episode\s*\d+|\d+)$/i, '')
           .trim();
 
         if (commonTitle.length > 2) {
@@ -367,26 +368,50 @@ const App: React.FC = () => {
     }
   };
 
-  // FIX: Erwartet nun die dynamische Sprache aus der Matrix und prüft den Offline-Status
-  const handleBatchSearch = async (matrixFiles: FileEntry[], searchLang: string) => {
-    if (!activeSeries) return;
+  const handleApplyManualEdits = (updatedMatrixFiles: FileEntry[]) => {
+    setFiles((prev) =>
+      prev.map((f) => {
+        const match = updatedMatrixFiles.find((m) => m.path === f.path);
+        return match ? { ...f, metadata: { ...match.metadata }, status: 'modified' as const } : f;
+      })
+    );
+  };
+
+  const handleBatchSearch = async (matrixFiles: FileEntry[], searchLang: string, targetSeriesName?: string) => {
+    let queryTitle = (targetSeriesName || activeSeries || '').trim();
+    if (!queryTitle) return;
     setProgressVisible(true);
     setProgressMessage('Batch-Suche läuft...');
     setProgressValue(0);
     try {
-      const isOffline = !navigator.onLine; // Checkt den Netzwerkstatus
+      const isOffline = !navigator.onLine;
 
-      const seriesSearchRes = await api.searchTMDB(activeSeries, 'tv', isOffline, searchLang);
-      const seriesSearch = seriesSearchRes.results || [];
+      let seriesSearchRes = await api.searchTMDB(queryTitle, 'tv', isOffline, searchLang);
+      let seriesSearch = seriesSearchRes.results || [];
+
+      // Smart Fallback 1: Falls die Suche mit trailing number schlägt (z.B. "Patience 2" -> "Patience")
+      if (seriesSearch.length === 0) {
+        const cleanedTitle = queryTitle.replace(/\s+\d+$/, '').trim();
+        if (cleanedTitle && cleanedTitle !== queryTitle) {
+          const fallbackRes = await api.searchTMDB(cleanedTitle, 'tv', isOffline, searchLang);
+          if (fallbackRes.results && fallbackRes.results.length > 0) {
+            seriesSearch = fallbackRes.results;
+            queryTitle = cleanedTitle;
+            setActiveSeries(cleanedTitle);
+          }
+        }
+      }
 
       if (seriesSearch.length === 0) {
-        alert('Serie nicht gefunden.');
+        alert(`Serie "${queryTitle}" nicht auf TMDB gefunden. Bitte passe den Seriennamen im Eingabefeld der Serien-Matrix an.`);
         setProgressVisible(false);
         return;
       }
       const seriesId = seriesSearch[0].id;
+      const detectedShowName = seriesSearch[0].name || queryTitle;
+      setActiveSeries(detectedShowName);
 
-      setProgressMessage('Lade Serien-Details...');
+      setProgressMessage(`Lade Serien-Details für "${detectedShowName}"...`);
       const details = await api.getSeriesDetails(seriesId, isOffline, searchLang);
       const credits = await api.getCredits('tv', seriesId, isOffline, searchLang);
 
@@ -430,6 +455,7 @@ const App: React.FC = () => {
 
             const updatedMeta = {
               ...f.metadata,
+              show: detectedShowName,
               title: ep.name,
               artist: artist,
               year: year,
@@ -501,6 +527,13 @@ const App: React.FC = () => {
             />
           </Paper>
 
+          <SubtitleManager 
+            subtitles={metadata.subtitles} 
+            onChange={(subtitles) => handleMetadataChange({ ...metadata, subtitles })} 
+            selectionCount={selectedIndices.length} 
+            videoDuration={metadata.duration} 
+          />
+
           {seriesMode && !pattern && !patternEditMode && (
             <PatternSelector files={files} pattern={null} onChange={handlePatternApplied} patternSeparator={patternSeparator} />
           )}
@@ -517,10 +550,11 @@ const App: React.FC = () => {
           {showMatrix && (
             <SeriesMatrix
               seriesName={activeSeries}
-              files={files.filter((f) => f.metadata.show === activeSeries)}
+              files={files.filter((f) => !f.metadata.show || f.metadata.show === activeSeries)}
               pattern={pattern}
               onClose={() => setShowMatrix(false)}
               onBatchSearch={handleBatchSearch}
+              onApplyManualEdits={handleApplyManualEdits}
             />
           )}
         </AppShell.Main>

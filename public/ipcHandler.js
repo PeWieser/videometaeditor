@@ -37,6 +37,34 @@ function initIpcHandlers(mainWindow) {
     return result.canceled ? null : result.filePaths[0];
   });
 
+  ipcMain.handle('dialog:openSubtitles', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Subtitles', extensions: ['srt', 'vtt', 'ass', 'ssa', 'sub'] }],
+    });
+    return result.canceled ? [] : result.filePaths;
+  });
+
+  ipcMain.handle('file:getSubtitleMetadata', async (event, filePath) => {
+    return new Promise((resolve) => {
+      const ffmpeg = require('fluent-ffmpeg');
+      ffmpeg.ffprobe(filePath, (err, data) => {
+        let durationSec = 0;
+        if (!err && data.format && data.format.duration) {
+          durationSec = parseFloat(data.format.duration);
+        }
+        
+        let firstLines = '';
+        try {
+          const buffer = fs.readFileSync(filePath);
+          firstLines = buffer.toString('utf8', 0, Math.min(buffer.length, 1024));
+        } catch(e) {}
+        
+        resolve({ durationSec, firstLines });
+      });
+    });
+  });
+
   ipcMain.handle('file:getMetadata', async (event, filePath) => {
     return await ffmpegService.getMetadata(filePath);
   });

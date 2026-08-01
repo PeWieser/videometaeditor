@@ -116,6 +116,24 @@ function getMetadata(filePath) {
       const tags = data.format.tags || {};
       const coverStream = data.streams.find(s => s.disposition && s.disposition.attached_pic);
 
+      const subtitleStreams = data.streams
+        .filter(s => s.codec_type === 'subtitle')
+        .map(s => {
+          const sTags = s.tags || {};
+          const sDisp = s.disposition || {};
+          return {
+            id: 'embedded_' + s.index,
+            isEmbedded: true,
+            streamIndex: s.index,
+            language: sTags.language || sTags.LANG || 'und',
+            title: sTags.title || '',
+            default: sDisp.default === 1,
+            forced: sDisp.forced === 1,
+            format: s.codec_name,
+            durationSec: parseFloat(s.duration || data.format?.duration || 0)
+          };
+        });
+
       resolve({
         title: tags.title || '',
         artist: tags.artist || tags.performer || tags.album_artist || '',
@@ -128,6 +146,7 @@ function getMetadata(filePath) {
         episode: parseNumber(tags.episode_id || tags.Part || tags.tv_episode || tags.episode_sort || tags.track),
         episode_title: tags.episode_name || tags['Track name'] || tags.title || '',
         cover: !!coverStream,
+        subtitles: subtitleStreams,
       });
     });
   });
@@ -149,7 +168,7 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
       cmd.outputOptions('-map_metadata', '-1');
 
       for (const [key, value] of Object.entries(metadata)) {
-        if (['coverPath', 'coverUrl', 'cover', 'tmdbId', 'tmdbType'].includes(key)) continue;
+        if (['coverPath', 'coverUrl', 'cover', 'tmdbId', 'tmdbType', 'subtitles'].includes(key)) continue;
         
         if (value !== undefined && value !== '' && value !== '[individuell]') {
           cmd.outputOptions(`-metadata`, `${key}=${value}`);
@@ -187,6 +206,52 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
         const newCoverIndex = videoStreams.length - oldCoversCount;
         
         cmd.outputOptions(`-disposition:v:${newCoverIndex}`, 'attached_pic');
+      }
+
+      let currentMapIndex = 1;
+      if (metadata.coverPath && fs.existsSync(metadata.coverPath)) {
+        currentMapIndex++;
+      }
+
+      if (metadata.subtitles && Array.isArray(metadata.subtitles)) {
+        cmd.outputOptions('-map', '-0:s');
+
+        const ext = path.extname(outputPath).toLowerCase();
+        const subtitleCodec = (ext === '.mp4' || ext === '.m4v') ? 'mov_text' : 'copy';
+
+        let subIdx = 0;
+        for (const sub of metadata.subtitles) {
+          if (sub.isEmbedded) {
+            cmd.outputOptions('-map', `0:${sub.streamIndex}`);
+          } else if (sub.path && fs.existsSync(sub.path)) {
+            cmd.input(sub.path);
+            cmd.outputOptions('-map', `${currentMapIndex}:0`);
+            currentMapIndex++;
+          } else {
+            continue;
+          }
+
+          cmd.outputOptions(`-c:s:${subIdx}`, subtitleCodec);
+          
+          if (sub.language) {
+            cmd.outputOptions(`-metadata:s:s:${subIdx}`, `language=${sub.language}`);
+          }
+          if (sub.title) {
+            cmd.outputOptions(`-metadata:s:s:${subIdx}`, `title=${sub.title}`);
+          }
+          
+          const dispositions = [];
+          if (sub.default) dispositions.push('default');
+          if (sub.forced) dispositions.push('forced');
+          
+          if (dispositions.length > 0) {
+            cmd.outputOptions(`-disposition:s:s:${subIdx}`, dispositions.join('+'));
+          } else {
+            cmd.outputOptions(`-disposition:s:s:${subIdx}`, '0');
+          }
+          
+          subIdx++;
+        }
       }
 
       if (onProgress) {

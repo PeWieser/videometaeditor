@@ -6,9 +6,25 @@ interface File {
   path?: string;
 }
 
+export interface SubtitleTrack {
+  id: string;
+  path?: string;
+  isEmbedded?: boolean;
+  streamIndex?: number;
+  language: string;
+  title: string;
+  default: boolean;
+  forced: boolean;
+  format?: string;
+  durationSec?: number;
+  durationWarning?: string;
+}
+
 declare global {
   interface Window {
     electronAPI: {
+      invoke?: (channel: string, ...args: any[]) => Promise<any>;
+      openSubtitles: () => Promise<string[]>;
       selectFiles: () => Promise<string[]>;
       getFileMetadata: (filePath: string) => Promise<any>;
       writeMetadata: (filePath: string, metadata: any) => Promise<boolean>;

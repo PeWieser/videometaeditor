@@ -93,28 +93,22 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
         })
         .filter(Boolean);
 
-      // Determine show title (series)
-      let showVal = '';
-      if (titleIndices.length > 0) {
+      // Determine show title (series): Manuelle Eingabe hat Vorrang vor Indizes!
+      let showVal = titleText.trim();
+      if (!showVal && titleIndices.length > 0) {
         showVal = titleIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ');
-      } else {
-        showVal = titleText;
       }
 
-      // Determine season
-      let seasonVal = '';
-      if (seasonIndices.length > 0) {
+      // Determine season: Manuelle Eingabe hat Vorrang vor Indizes!
+      let seasonVal = seasonText.trim();
+      if (!seasonVal && seasonIndices.length > 0) {
         seasonVal = seasonIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ').replace(/\D/g, '').replace(/^0+/, '');
-      } else {
-        seasonVal = seasonText;
       }
 
-      // Determine episode
-      let episodeVal = '';
-      if (episodeIndices.length > 0) {
+      // Determine episode: Manuelle Eingabe hat Vorrang vor Indizes!
+      let episodeVal = episodeText.trim();
+      if (!episodeVal && episodeIndices.length > 0) {
         episodeVal = episodeIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ').replace(/\D/g, '').replace(/^0+/, '');
-      } else {
-        episodeVal = episodeText;
       }
 
       return {

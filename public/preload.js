@@ -2,6 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   selectFiles: () => ipcRenderer.invoke('dialog:openFiles'),
+  selectSubtitles: () => ipcRenderer.invoke('dialog:openSubtitles'),
+  getSubtitleMetadata: (...args) => ipcRenderer.invoke('file:getSubtitleMetadata', ...args),
   getFileMetadata: (...args) => ipcRenderer.invoke('file:getMetadata', ...args),
   writeMetadata: (...args) => ipcRenderer.invoke('file:writeMetadata', ...args),
   batchWriteMetadata: (...args) => ipcRenderer.invoke('file:batchWriteMetadata', ...args),
