@@ -1,5 +1,5 @@
 import React from 'react';
-import { Paper, Title, Table, Badge, Select, TextInput, Switch, ActionIcon, Button, Group, Tooltip, Text, Flex } from '@mantine/core';
+import { Paper, Title, Table, Badge, Select, TextInput, Checkbox, ActionIcon, Button, Group, Tooltip, Text, Flex } from '@mantine/core';
 import { IconTrash, IconPlus, IconAlertTriangle } from '@tabler/icons-react';
 
 export interface SubtitleTrack {
@@ -118,25 +118,31 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
             allowDeselect={false}
           />
         </Table.Td>
-        <Table.Td>
-          <TextInput
-            placeholder="Titel (z.B. SDH)"
-            value={track.title}
-            onChange={(e) => updateTrack(idx, { title: e.currentTarget.value })}
-          />
+        <Table.Td style={{ width: 160 }}>
+          <Tooltip label="Interner Spurname im Videoplayer (z.B. 'Forced', 'Vollständig', 'SDH für Hörgeschädigte')." multiline w={220}>
+            <TextInput
+              placeholder="z.B. Forced, SDH"
+              value={track.title}
+              onChange={(e) => updateTrack(idx, { title: e.currentTarget.value })}
+            />
+          </Tooltip>
         </Table.Td>
         <Table.Td>
-          <Flex gap="sm">
-            <Switch
-              label="Standard"
-              checked={track.isDefault}
-              onChange={(e) => updateTrack(idx, { isDefault: e.currentTarget.checked })}
-            />
-            <Switch
-              label="Erzwungen"
-              checked={track.isForced}
-              onChange={(e) => updateTrack(idx, { isForced: e.currentTarget.checked })}
-            />
+          <Flex gap="md" align="center">
+            <Tooltip label="Legt fest, dass diese Untertitelspur beim Abspielen im Player automatisch als Hauptspur ausgewählt wird." multiline w={220}>
+              <Checkbox
+                label="Standard"
+                checked={track.isDefault}
+                onChange={(e) => updateTrack(idx, { isDefault: e.currentTarget.checked })}
+              />
+            </Tooltip>
+            <Tooltip label="Kennzeichnet Untertitel für fremdsprachige Passagen/Schilder. Wird von Playern auch bei ausgeschalteten Untertiteln eingeblendet." multiline w={230}>
+              <Checkbox
+                label="Erzwungen"
+                checked={track.isForced}
+                onChange={(e) => updateTrack(idx, { isForced: e.currentTarget.checked })}
+              />
+            </Tooltip>
           </Flex>
         </Table.Td>
         <Table.Td>
