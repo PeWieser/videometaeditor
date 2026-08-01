@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Modal, Table, TextInput, Button, Group, Progress, Text, Select, Paper } from '@mantine/core';
+import { Modal, Table, TextInput, Button, Group, Progress, Text, Select } from '@mantine/core';
 import { FileEntry } from '../App';
+import { PatternConfig } from './PatternSelector';
 
 interface Props {
   seriesName: string;
   files: FileEntry[];
-  pattern: { titleIdx: number; seasonIdx?: number; episodeIdx: number } | null;
+  pattern: PatternConfig | null;
   onClose: () => void;
   onBatchSearch: (files: FileEntry[], language: string, targetSeriesName?: string) => Promise<void>;
-  onApplyManualEdits?: (updatedFiles: FileEntry[]) => void;
 }
 
 const SeriesMatrix: React.FC<Props> = ({
@@ -17,7 +17,6 @@ const SeriesMatrix: React.FC<Props> = ({
   pattern,
   onClose,
   onBatchSearch,
-  onApplyManualEdits,
 }) => {
   const [currentSeriesName, setCurrentSeriesName] = useState(seriesName || '');
   const [episodes, setEpisodes] = useState<FileEntry[]>([]);
@@ -62,13 +61,6 @@ const SeriesMatrix: React.FC<Props> = ({
     setEpisodes(updated);
   };
 
-  const handleApplyManual = () => {
-    if (onApplyManualEdits) {
-      onApplyManualEdits(episodes);
-    }
-    onClose();
-  };
-
   const handleBatchSearch = async () => {
     setBatchRunning(true);
     await onBatchSearch(episodes, language, currentSeriesName);
@@ -83,12 +75,14 @@ const SeriesMatrix: React.FC<Props> = ({
 
   let patternDescription = 'Kein Muster definiert';
   if (pattern) {
-    if (pattern.seasonIdx !== undefined && pattern.seasonIdx >= 0) {
-      patternDescription = `Muster: Staffel an Pos ${pattern.seasonIdx + 1}, Episode an Pos ${pattern.episodeIdx + 1}`;
-    } else if (pattern.episodeIdx !== undefined && pattern.episodeIdx >= 0) {
-      patternDescription = `Muster: Episode an Pos ${pattern.episodeIdx + 1} (Ohne Staffelzuweisung)`;
-    } else {
-      patternDescription = `Muster: Manuell zugewiesen / Freie Texteingabe`;
+    const hasSeason = pattern.seasonIndices && pattern.seasonIndices.length > 0;
+    const hasEpisode = pattern.episodeIndices && pattern.episodeIndices.length > 0;
+    if (hasSeason && hasEpisode) {
+      patternDescription = `Muster: Staffel Pos ${pattern.seasonIndices.map(i => i + 1).join(', ')}, Episode Pos ${pattern.episodeIndices.map(i => i + 1).join(', ')}`;
+    } else if (hasEpisode) {
+      patternDescription = `Muster: Episode Pos ${pattern.episodeIndices.map(i => i + 1).join(', ')} (Ohne Staffelzuweisung)`;
+    } else if (pattern.titleText || pattern.seasonText || pattern.episodeText) {
+      patternDescription = `Muster: Manuell definiert / Eingabe`;
     }
   }
 
@@ -149,31 +143,25 @@ const SeriesMatrix: React.FC<Props> = ({
         </Table>
       </div>
 
-      <Group mt="xl" justify="space-between">
-        <Button variant="outline" color="blue" onClick={handleApplyManual} disabled={batchRunning}>
-          Manuelle Änderungen übernehmen
+      <Group mt="xl" justify="flex-end">
+        <Select
+          data={[
+            { value: 'de', label: 'Deutsch' },
+            { value: 'en', label: 'English' },
+            { value: 'fr', label: 'Français' },
+            { value: 'es', label: 'Español' }
+          ]}
+          value={language}
+          onChange={handleLanguageChange}
+          style={{ width: 120 }}
+          disabled={batchRunning}
+        />
+        <Button onClick={handleBatchSearch} disabled={batchRunning}>
+          Batch-Suche (TMDB)
         </Button>
-
-        <Group>
-          <Select
-            data={[
-              { value: 'de', label: 'Deutsch' },
-              { value: 'en', label: 'English' },
-              { value: 'fr', label: 'Français' },
-              { value: 'es', label: 'Español' }
-            ]}
-            value={language}
-            onChange={handleLanguageChange}
-            style={{ width: 120 }}
-            disabled={batchRunning}
-          />
-          <Button onClick={handleBatchSearch} disabled={batchRunning}>
-            Batch-Suche (TMDB)
-          </Button>
-          <Button variant="default" onClick={onClose} disabled={batchRunning}>
-            Schließen
-          </Button>
-        </Group>
+        <Button variant="default" onClick={onClose} disabled={batchRunning}>
+          Schließen
+        </Button>
       </Group>
     </Modal>
   );
