@@ -97,7 +97,12 @@ const App: React.FC = () => {
         if (Object.keys(updated[i].metadata).length === 0) {
           setProgressMessage(`Lese Metadaten der Dateien... (${i + 1}/${updated.length})`);
           setProgressValue(((i + 1) / updated.length) * 100);
-          updated[i].metadata = await getMetadata(updated[i].path);
+          const meta = await getMetadata(updated[i].path);
+          const filenameNoExt = updated[i].name.replace(/\.[^/.]+$/, '');
+          if (!meta.title || meta.title.trim() === '') {
+            meta.title = filenameNoExt;
+          }
+          updated[i].metadata = meta;
         }
       }
 
@@ -227,12 +232,25 @@ const App: React.FC = () => {
 
   const getCommonMetadata = useCallback((indices: number[]): any => {
     if (indices.length === 0) return {};
-    if (indices.length === 1) return files[indices[0]].metadata;
+    if (indices.length === 1) {
+      const file = files[indices[0]];
+      const meta = { ...file.metadata };
+      if (!meta.title || meta.title.trim() === '') {
+        meta.title = file.name.replace(/\.[^/.]+$/, '');
+      }
+      return meta;
+    }
     const first = files[indices[0]].metadata;
     const result: any = {};
     for (const key of Object.keys(first)) {
       const allSame = indices.every((i) => files[i].metadata[key] === first[key]);
       result[key] = allSame ? first[key] : '[individuell]';
+    }
+    if (!result.title || result.title.trim() === '' || result.title === '[individuell]') {
+      if (result.title !== '[individuell]') {
+        const firstName = files[indices[0]].name.replace(/\.[^/.]+$/, '');
+        result.title = firstName;
+      }
     }
     return result;
   }, [files]);

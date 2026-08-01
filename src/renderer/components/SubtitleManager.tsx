@@ -99,26 +99,31 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
 
   if (selectionCount === 0) return null;
 
+  const hasAnyWarnings = subtitles.some(track => track.duration && videoDuration && Math.abs(track.duration - videoDuration) > 300);
+
   const rows = subtitles.map((track, idx) => {
     const isDurationMismatch = track.duration && videoDuration && Math.abs(track.duration - videoDuration) > 300;
 
     return (
       <Table.Tr key={track.id || idx}>
-        <Table.Td>
-          <Badge color={track.type === 'embedded' ? 'blue' : 'green'} variant="light">
-            {track.type === 'embedded' ? 'Eingebettet' : track.filename}
-          </Badge>
+        <Table.Td style={{ minWidth: 150, maxWidth: 220 }}>
+          <Tooltip label={track.type === 'embedded' ? 'In Videodatei eingebettet' : track.filename || track.path} multiline w={300}>
+            <Badge color={track.type === 'embedded' ? 'blue' : 'green'} variant="light" fullWidth style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              {track.type === 'embedded' ? 'Eingebettet' : track.filename || 'Datei'}
+            </Badge>
+          </Tooltip>
         </Table.Td>
-        <Table.Td>
+        <Table.Td style={{ minWidth: 150 }}>
           <Select
             data={LANGUAGES}
             value={track.language}
             onChange={(val) => updateTrack(idx, { language: val || 'eng' })}
             searchable
             allowDeselect={false}
+            comboboxProps={{ withinPortal: true }}
           />
         </Table.Td>
-        <Table.Td style={{ width: 160 }}>
+        <Table.Td style={{ minWidth: 140 }}>
           <Tooltip label="Interner Spurname im Videoplayer (z.B. 'Forced', 'Vollständig', 'SDH für Hörgeschädigte')." multiline w={220}>
             <TextInput
               placeholder="z.B. Forced, SDH"
@@ -127,7 +132,7 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
             />
           </Tooltip>
         </Table.Td>
-        <Table.Td>
+        <Table.Td style={{ minWidth: 200 }}>
           <Flex gap="md" align="center">
             <Tooltip label="Legt fest, dass diese Untertitelspur beim Abspielen im Player automatisch als Hauptspur ausgewählt wird." multiline w={220}>
               <Checkbox
@@ -145,7 +150,7 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
             </Tooltip>
           </Flex>
         </Table.Td>
-        <Table.Td>
+        <Table.Td style={{ minWidth: hasAnyWarnings ? 160 : 10 }}>
           {isDurationMismatch && (
             <Tooltip label={`Dauer Untertitel: ${formatDuration(track.duration)} vs Video: ${formatDuration(videoDuration)}`}>
               <Badge color="red" leftSection={<IconAlertTriangle size={12} />}>
@@ -154,7 +159,7 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
             </Tooltip>
           )}
         </Table.Td>
-        <Table.Td>
+        <Table.Td style={{ width: 40 }}>
           <ActionIcon color="red" onClick={() => removeTrack(idx)}>
             <IconTrash size={18} />
           </ActionIcon>
@@ -178,12 +183,12 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Typ / Datei</Table.Th>
-              <Table.Th>Sprache</Table.Th>
-              <Table.Th>Titel</Table.Th>
-              <Table.Th>Optionen</Table.Th>
-              <Table.Th>Warnungen</Table.Th>
-              <Table.Th></Table.Th>
+              <Table.Th style={{ width: '22%' }}>Typ / Datei</Table.Th>
+              <Table.Th style={{ width: '22%' }}>Sprache</Table.Th>
+              <Table.Th style={{ width: '20%' }}>Titel</Table.Th>
+              <Table.Th style={{ width: '24%' }}>Optionen</Table.Th>
+              <Table.Th style={{ width: hasAnyWarnings ? '12%' : '0%' }}>{hasAnyWarnings ? 'Warnungen' : ''}</Table.Th>
+              <Table.Th style={{ width: 40 }}></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>{rows}</Table.Tbody>

@@ -213,7 +213,7 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
         currentMapIndex++;
       }
 
-      if (metadata.subtitles && Array.isArray(metadata.subtitles)) {
+      if (metadata.subtitles && Array.isArray(metadata.subtitles) && metadata.subtitles.length > 0) {
         cmd.outputOptions('-map', '-0:s');
 
         const ext = path.extname(outputPath).toLowerCase();
@@ -221,7 +221,7 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
 
         let subIdx = 0;
         for (const sub of metadata.subtitles) {
-          if (sub.isEmbedded) {
+          if (sub.isEmbedded || sub.type === 'embedded') {
             cmd.outputOptions('-map', `0:${sub.streamIndex}`);
           } else if (sub.path && fs.existsSync(sub.path)) {
             cmd.input(sub.path);
@@ -241,8 +241,8 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
           }
           
           const dispositions = [];
-          if (sub.default) dispositions.push('default');
-          if (sub.forced) dispositions.push('forced');
+          if (sub.isDefault || sub.default) dispositions.push('default');
+          if (sub.isForced || sub.forced) dispositions.push('forced');
           
           if (dispositions.length > 0) {
             cmd.outputOptions(`-disposition:s:s:${subIdx}`, dispositions.join('+'));
