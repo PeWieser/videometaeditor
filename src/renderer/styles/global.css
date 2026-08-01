@@ -1,0 +1,220 @@
+/* Modernes, cleanes Design */
+:root {
+  --bg: #f8f9fa;
+  --sidebar-bg: #ffffff;
+  --border: #dee2e6;
+  --text: #212529;
+  --primary: #228be6;
+  --hover: #f1f3f5;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.sidebar button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sidebar button:hover {
+  background: #1971c2;
+}
+
+.sidebar ul {
+  list-style: none;
+  margin-top: 1rem;
+}
+
+.sidebar li {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.sidebar li:hover { background: var(--hover); }
+.sidebar li.selected { background: #e7f5ff; font-weight: 500; }
+
+/* Hauptbereich */
+.main-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.metadata-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metadata-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  font-weight: 500;
+  gap: 0.25rem;
+}
+
+.metadata-form input,
+.metadata-form textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.metadata-form textarea { resize: vertical; min-height: 60px; }
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.actions button {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actions button:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Rechtes Panel */
+.right-panel {
+  width: 300px;
+  background: var(--sidebar-bg);
+  border-left: 1px solid var(--border);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.tmdb-search, .output-settings {
+  margin-bottom: 1.5rem;
+}
+
+.tmdb-search input,
+.tmdb-search select,
+.output-settings input,
+.output-settings select {
+  width: 100%;
+  padding: 0.5rem;
+  margin: 0.25rem 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.tmdb-search button,
+.output-settings button {
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.results-dropdown {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.result-item:hover { background: var(--hover); }
+
+/* Matrix */
+.matrix-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.matrix-content {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 80%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.matrix-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.matrix-content th {
+  text-align: left;
+  padding: 0.5rem;
+  background: #f8f9fa;
+}
+
+.matrix-content td {
+  padding: 0.25rem 0.5rem;
+}
+
+.matrix-content input {
+  width: 100%;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}

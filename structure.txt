@@ -1,0 +1,30 @@
+VideoMetaEditor/
+├── bin/                   # ffmpeg.exe, ffprobe.exe (manuell kopieren)
+├── public/
+│   ├── index.html
+│   └── electron.js        # electron main process
+├── src/
+│   ├── main/              # electron main process modules (von renderer getrennt)
+│   │   ├── main.ts
+│   │   ├── preload.ts
+│   │   ├── ipcHandler.ts
+│   │   ├── ffmpegService.ts
+│   │   ├── tmdbService.ts
+│   │   └── store.ts
+│   ├── renderer/          # React components, styles
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   │   ├── FileList.tsx
+│   │   │   ├── MetadataForm.tsx
+│   │   │   ├── TmdbSearch.tsx
+│   │   │   ├── SeriesMatrix.tsx
+│   │   │   └── OutputSettings.tsx
+│   │   ├── hooks/
+│   │   │   └── useIpc.ts
+│   │   ├── styles/
+│   │   │   └── global.css
+│   │   └── index.tsx
+├── package.json
+├── tsconfig.json
+├── electron-builder.yml
+└── .env
