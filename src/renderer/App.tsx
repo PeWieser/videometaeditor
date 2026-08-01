@@ -430,54 +430,63 @@ const App: React.FC = () => {
 
       const year = (details?.first_air_date || '').substring(0, 4);
       const seasonPosterCache: Record<string, string> = {};
-
       for (let i = 0; i < matrixFiles.length; i++) {
         const f = matrixFiles[i];
         const season = f.metadata.season || '1';
         const episode = f.metadata.episode || '1';
 
         try {
-          const seasonData = await api.getSeasonDetails(seriesId, season, isOffline, searchLang);
-          const ep = seasonData?.episodes?.find((e: any) => e.episode_number === parseInt(episode));
+          let epName = `${detectedShowName} S${season}E${episode}`;
+          let epOverview = details?.overview || '';
+          let posterPath = details?.poster_path || '';
 
-          if (ep) {
-            if (seasonPosterCache[season] === undefined) {
-              if (seasonData?.poster_path) {
-                const url = `https://image.tmdb.org/t/p/w500${seasonData.poster_path}`;
-                seasonPosterCache[season] = await api.downloadImage(url);
-              } else if (details?.poster_path) {
-                const url = `https://image.tmdb.org/t/p/w500${details.poster_path}`;
-                seasonPosterCache[season] = await api.downloadImage(url);
-              } else {
-                seasonPosterCache[season] = '';
-              }
+          try {
+            const seasonData = await api.getSeasonDetails(seriesId, season, isOffline, searchLang);
+            if (seasonData?.poster_path) {
+              posterPath = seasonData.poster_path;
             }
-
-            const updatedMeta = {
-              ...f.metadata,
-              show: detectedShowName,
-              title: ep.name,
-              artist: artist,
-              year: year,
-              genre: genres,
-              description: ep.overview || '',
-              episode_title: ep.name,
-              season: season,
-              episode: episode,
-              tmdbId: seriesId,
-              tmdbType: 'tv',
-            };
-
-            if (seasonPosterCache[season]) {
-              updatedMeta.coverPath = seasonPosterCache[season];
+            const ep = seasonData?.episodes?.find((e: any) => e.episode_number === parseInt(episode));
+            if (ep) {
+              if (ep.name) epName = ep.name;
+              if (ep.overview) epOverview = ep.overview;
             }
-
-            setFiles((prev) =>
-              prev.map((file) =>
-                file.path === f.path ? { ...file, metadata: updatedMeta, status: 'modified' as const } : file
-              )
-            );
+          } catch (e) {
+            console.warn('Season details fallback to series overview', e);
           }
+
+          if (seasonPosterCache[season] === undefined) {
+            if (posterPath) {
+              const url = posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`;
+              seasonPosterCache[season] = await api.downloadImage(url);
+            } else {
+              seasonPosterCache[season] = '';
+            }
+          }
+
+          const updatedMeta = {
+            ...f.metadata,
+            show: detectedShowName,
+            title: epName,
+            artist: artist,
+            year: year,
+            genre: genres,
+            description: epOverview,
+            episode_title: epName,
+            season: season,
+            episode: episode,
+            tmdbId: seriesId,
+            tmdbType: 'tv',
+          };
+
+          if (seasonPosterCache[season]) {
+            updatedMeta.coverPath = seasonPosterCache[season];
+          }
+
+          setFiles((prev) =>
+            prev.map((file) =>
+              file.path === f.path ? { ...file, metadata: updatedMeta, status: 'modified' as const } : file
+            )
+          );
         } catch (err) {
           console.error(err);
         }
@@ -550,7 +559,7 @@ const App: React.FC = () => {
           {showMatrix && (
             <SeriesMatrix
               seriesName={activeSeries}
-              files={files.filter((f) => !f.metadata.show || f.metadata.show === activeSeries)}
+              files={files}
               pattern={pattern}
               onClose={() => setShowMatrix(false)}
               onBatchSearch={handleBatchSearch}

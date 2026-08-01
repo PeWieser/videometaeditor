@@ -93,22 +93,28 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
         })
         .filter(Boolean);
 
-      // Determine show title (series): Manuelle Eingabe hat Vorrang vor Indizes!
-      let showVal = titleText.trim();
-      if (!showVal && titleIndices.length > 0) {
+      // 1. Serientitel (show): Falls Indizes gewählt sind, aus Datei-Partien extrahieren; sonst manuellen Text nutzen
+      let showVal = '';
+      if (titleIndices.length > 0) {
         showVal = titleIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ');
+      } else {
+        showVal = titleText.trim();
       }
 
-      // Determine season: Manuelle Eingabe hat Vorrang vor Indizes!
-      let seasonVal = seasonText.trim();
-      if (!seasonVal && seasonIndices.length > 0) {
+      // 2. Staffel (season): Falls Indizes gewählt sind, pro Datei aus parts[idx] lesen; sonst manuellen Text nutzen
+      let seasonVal = '';
+      if (seasonIndices.length > 0) {
         seasonVal = seasonIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ').replace(/\D/g, '').replace(/^0+/, '');
+      } else {
+        seasonVal = seasonText.trim();
       }
 
-      // Determine episode: Manuelle Eingabe hat Vorrang vor Indizes!
-      let episodeVal = episodeText.trim();
-      if (!episodeVal && episodeIndices.length > 0) {
+      // 3. Episode (episode): Falls Indizes gewählt sind, PRO DATEI aus parts[idx] lesen; sonst manuellen Text nutzen
+      let episodeVal = '';
+      if (episodeIndices.length > 0) {
         episodeVal = episodeIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ').replace(/\D/g, '').replace(/^0+/, '');
+      } else {
+        episodeVal = episodeText.trim();
       }
 
       return {

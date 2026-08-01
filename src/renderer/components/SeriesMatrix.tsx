@@ -37,16 +37,13 @@ const SeriesMatrix: React.FC<Props> = ({
   }, [seriesName]);
 
   useEffect(() => {
-    // Zeige Dateien, die zur Serie gehören ODER alle geladenen Dateien, falls noch keine Zuordnung existiert
-    const matching = files.filter((f) => !f.metadata.show || f.metadata.show === seriesName);
-    const targetList = matching.length > 0 ? matching : files;
-
-    const sorted = [...targetList].sort(
+    // Zeige immer alle übergebenen Dateien in der Serien-Matrix
+    const sorted = [...files].sort(
       (a, b) =>
         (parseInt(a.metadata.season) || 0) - (parseInt(b.metadata.season) || 0) ||
         (parseInt(a.metadata.episode) || 0) - (parseInt(b.metadata.episode) || 0)
     );
-    setEpisodes(sorted.map((f) => ({ ...f, metadata: { ...f.metadata, show: f.metadata.show || currentSeriesName || seriesName } })));
+    setEpisodes(sorted.map((f) => ({ ...f, metadata: { ...f.metadata, show: f.metadata.show || seriesName } })));
   }, [files, seriesName]);
 
   const handleSeriesNameChange = (newName: string) => {
