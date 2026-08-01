@@ -111,7 +111,9 @@ function initIpcHandlers(mainWindow) {
       const pattern = isSeries ? seriesPattern : moviePattern;
 
       let newName = buildFileName(file.metadata, pattern);
-      if (!newName) newName = path.basename(file.path, path.extname(file.path));
+      if (!newName || newName.trim() === '' || newName === '()') {
+        newName = path.basename(file.path, path.extname(file.path));
+      }
 
       const ext = path.extname(file.path);
       const targetFolder = (outputFolder && outputFolder.trim() !== '') ? outputFolder : path.dirname(file.path);
@@ -122,7 +124,11 @@ function initIpcHandlers(mainWindow) {
         await ffmpegService.writeMetadata(file.path, tmpPath, file.metadata, gpuEnabled, (percent) => {
           const overallProgress = (i + (percent / 100)) / files.length;
           mainWindow.setProgressBar(overallProgress);
-          mainWindow.webContents.send('progress', { opened: true, current: percent, message: `Datei ${i + 1}/${files.length}: ${newName} (${Math.round(percent)}%)` });
+          mainWindow.webContents.send('progress', {
+            opened: true,
+            current: percent,
+            message: `Datei ${i + 1}/${files.length}: ${newName} (${Math.round(percent)}%)`
+          });
         });
 
         const resolvedInput = path.resolve(file.path).toLowerCase();
@@ -271,11 +277,20 @@ function buildFileName(metadata, pattern) {
   let name = pattern
     .replace(/{show}/g, metadata.show || '')
     .replace(/{title}/g, metadata.title || '')
-    .replace(/{season}/g, String(metadata.season || '').padStart(2, '0'))
-    .replace(/{episode}/g, String(metadata.episode || '').padStart(2, '0'))
+    .replace(/{season}/g, metadata.season ? String(metadata.season).padStart(2, '0') : '')
+    .replace(/{episode}/g, metadata.episode ? String(metadata.episode).padStart(2, '0') : '')
     .replace(/{episode_title}/g, metadata.episode_title || '')
     .replace(/{year}/g, metadata.year || '');
-  return name.replace(/[<>:"/\\|?*]+/g, '').trim();
+
+  // Entferne ungültige Pfadzeichen, leere Klammern () und doppelte Leerzeichen
+  name = name
+    .replace(/[<>:"/\\|?*]+/g, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\[\s*\]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return name;
 }
 
 module.exports = { initIpcHandlers };
