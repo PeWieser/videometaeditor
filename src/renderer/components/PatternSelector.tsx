@@ -2,11 +2,20 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Paper, Group, Button, Text, Popover, Checkbox, Stack, TextInput, Badge } from '@mantine/core';
 import { FileEntry } from '../App';
 
+export interface PatternConfig {
+  titleText: string;
+  seasonText: string;
+  episodeText: string;
+  titleIndices: number[];
+  seasonIndices: number[];
+  episodeIndices: number[];
+}
+
 interface Props {
   files: FileEntry[];
-  pattern: { titleIdx: number; seasonIdx?: number; episodeIdx: number } | null;
+  pattern: PatternConfig | null;
   patternSeparator?: string;
-  onChange: (newMetaList: any[], newPattern: { titleIdx: number; seasonIdx?: number; episodeIdx: number }) => void;
+  onChange: (newMetaList: any[], newPattern: PatternConfig) => void;
 }
 
 const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, onChange }) => {
@@ -24,15 +33,12 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
     return name
       .split(splitRegex)
       .flatMap(part => {
-        // Matcht klassisches S01E02
         const sub = part.match(/^([Ss]\d{1,3})([Ee]\d{1,3})$/);
         if (sub) return [sub[1], sub[2]];
 
-        // NEU: Matcht Ausdrücke wie "Series 1" oder "Staffel 04"
         const seriesMatch = part.match(/^(Series|Staffel|S)\.?(\d+)$/i);
         if (seriesMatch) return [seriesMatch[2]];
 
-        // Entfernt störende Punkte am Ende von nackten Nummern
         return [part.replace(/\.$/, '')];
       })
       .filter(Boolean);
@@ -53,18 +59,29 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
   const [seasonOpened, setSeasonOpened] = useState(false);
   const [episodeOpened, setEpisodeOpened] = useState(false);
 
-  // Initialize/Sync states when pattern or segments change
+  // Sync state when pattern or segments change
   useEffect(() => {
-    if (pattern && segments.length > 0) {
-      const tIdx = pattern.titleIdx !== undefined && pattern.titleIdx >= 0 && pattern.titleIdx < segments.length ? [pattern.titleIdx] : [];
-      const sIdx = pattern.seasonIdx !== undefined && pattern.seasonIdx >= 0 && pattern.seasonIdx < segments.length ? [pattern.seasonIdx] : [];
-      const eIdx = pattern.episodeIdx !== undefined && pattern.episodeIdx >= 0 && pattern.episodeIdx < segments.length ? [pattern.episodeIdx] : [];
+    if (pattern) {
+      if (pattern.titleText !== undefined) setTitleText(pattern.titleText);
+      if (pattern.seasonText !== undefined) setSeasonText(pattern.seasonText);
+      if (pattern.episodeText !== undefined) setEpisodeText(pattern.episodeText);
+
+      if (pattern.titleIndices) setTitleIndices(pattern.titleIndices);
+      if (pattern.seasonIndices) setSeasonIndices(pattern.seasonIndices);
+      if (pattern.episodeIndices) setEpisodeIndices(pattern.episodeIndices);
+    } else if (segments.length > 0) {
+      const tIdx = [0];
+      const sIdx = segments.length >= 2 ? [1] : [];
+      const eIdx = segments.length >= 3 ? [2] : [];
 
       setTitleIndices(tIdx);
       setSeasonIndices(sIdx);
       setEpisodeIndices(eIdx);
 
-      setTitleText(tIdx.map(i => segments[i]).join(' '));
+      const rawTitle = tIdx.map(i => segments[i]).join(' ');
+      const cleanTitle = rawTitle.replace(/\s+\d+$/, '').trim();
+      setTitleText(cleanTitle || rawTitle);
+
       setSeasonText(sIdx.map(i => segments[i]).join(' ').replace(/\D/g, '').replace(/^0+/, ''));
       setEpisodeText(eIdx.map(i => segments[i]).join(' ').replace(/\D/g, '').replace(/^0+/, ''));
     }
@@ -80,6 +97,8 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
       alert("Hinweis: Es wurde kein Episoden-Segment ausgewählt. Die Episodennummern werden nicht automatisch ausgefüllt.");
     }
 
+    const segmentTitleStr = titleIndices.map(i => segments[i]).join(' ');
+
     const updated = files.map((file) => {
       const name = file.name.replace(/\.\w+$/, '');
       const parts = name
@@ -93,15 +112,15 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
         })
         .filter(Boolean);
 
-      // 1. Serientitel (show): Falls Indizes gewählt sind, aus Datei-Partien extrahieren; sonst manuellen Text nutzen
-      let showVal = '';
-      if (titleIndices.length > 0) {
+      // 1. Serientitel: Falls manuell editiert, manuellen Text nutzen; sonst Segmente
+      let showVal = titleText.trim();
+      if (!showVal && titleIndices.length > 0) {
         showVal = titleIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ');
-      } else {
-        showVal = titleText.trim();
+      } else if (titleIndices.length > 0 && segmentTitleStr && titleText === segmentTitleStr) {
+        showVal = titleIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ');
       }
 
-      // 2. Staffel (season): Falls Indizes gewählt sind, pro Datei aus parts[idx] lesen; sonst manuellen Text nutzen
+      // 2. Staffel: Falls Indizes gewählt, pro Datei aus parts[idx] extrahieren; sonst manuellen Text nutzen
       let seasonVal = '';
       if (seasonIndices.length > 0) {
         seasonVal = seasonIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ').replace(/\D/g, '').replace(/^0+/, '');
@@ -109,7 +128,7 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
         seasonVal = seasonText.trim();
       }
 
-      // 3. Episode (episode): Falls Indizes gewählt sind, PRO DATEI aus parts[idx] lesen; sonst manuellen Text nutzen
+      // 3. Episode: Falls Indizes gewählt, PRO DATEI aus parts[idx] extrahieren; sonst manuellen Text nutzen
       let episodeVal = '';
       if (episodeIndices.length > 0) {
         episodeVal = episodeIndices.map(idx => parts[idx] || '').filter(Boolean).join(' ').replace(/\D/g, '').replace(/^0+/, '');
@@ -126,9 +145,12 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
     });
 
     onChange(updated, {
-      titleIdx: titleIndices[0] !== undefined ? titleIndices[0] : -1,
-      seasonIdx: seasonIndices[0] !== undefined ? seasonIndices[0] : undefined,
-      episodeIdx: episodeIndices[0] !== undefined ? episodeIndices[0] : -1,
+      titleText: titleText.trim(),
+      seasonText: seasonText.trim(),
+      episodeText: episodeText.trim(),
+      titleIndices,
+      seasonIndices,
+      episodeIndices,
     });
   };
 
@@ -154,9 +176,6 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
               value={titleText}
               onChange={(e) => {
                 setTitleText(e.currentTarget.value);
-                if (e.currentTarget.value === '') {
-                  setTitleIndices([]);
-                }
               }}
               onFocus={() => {
                 setTitleOpened(true);
@@ -199,9 +218,6 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
               value={seasonText}
               onChange={(e) => {
                 setSeasonText(e.currentTarget.value);
-                if (e.currentTarget.value === '') {
-                  setSeasonIndices([]);
-                }
               }}
               onFocus={() => {
                 setSeasonOpened(true);
@@ -245,9 +261,6 @@ const PatternSelector: React.FC<Props> = ({ files, pattern, patternSeparator, on
               value={episodeText}
               onChange={(e) => {
                 setEpisodeText(e.currentTarget.value);
-                if (e.currentTarget.value === '') {
-                  setEpisodeIndices([]);
-                }
               }}
               onFocus={() => {
                 setEpisodeOpened(true);

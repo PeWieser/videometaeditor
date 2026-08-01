@@ -149,31 +149,25 @@ const SeriesMatrix: React.FC<Props> = ({
         </Table>
       </div>
 
-      <Group mt="xl" justify="space-between">
-        <Button variant="outline" color="blue" onClick={handleApplyManual} disabled={batchRunning}>
-          Manuelle Änderungen übernehmen
+      <Group mt="xl" justify="flex-end">
+        <Select
+          data={[
+            { value: 'de', label: 'Deutsch' },
+            { value: 'en', label: 'English' },
+            { value: 'fr', label: 'Français' },
+            { value: 'es', label: 'Español' }
+          ]}
+          value={language}
+          onChange={handleLanguageChange}
+          style={{ width: 120 }}
+          disabled={batchRunning}
+        />
+        <Button onClick={handleBatchSearch} disabled={batchRunning}>
+          Batch-Suche (TMDB)
         </Button>
-
-        <Group>
-          <Select
-            data={[
-              { value: 'de', label: 'Deutsch' },
-              { value: 'en', label: 'English' },
-              { value: 'fr', label: 'Français' },
-              { value: 'es', label: 'Español' }
-            ]}
-            value={language}
-            onChange={handleLanguageChange}
-            style={{ width: 120 }}
-            disabled={batchRunning}
-          />
-          <Button onClick={handleBatchSearch} disabled={batchRunning}>
-            Batch-Suche (TMDB)
-          </Button>
-          <Button variant="default" onClick={onClose} disabled={batchRunning}>
-            Schließen
-          </Button>
-        </Group>
+        <Button variant="default" onClick={onClose} disabled={batchRunning}>
+          Schließen
+        </Button>
       </Group>
     </Modal>
   );

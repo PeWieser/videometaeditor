@@ -24,7 +24,7 @@ import SeriesMatrix from './components/SeriesMatrix';
 import OutputSettings from './components/OutputSettings';
 import SubtitleManager from './components/SubtitleManager';
 import CoverPickerModal from './components/CoverPickerModal';
-import PatternSelector from './components/PatternSelector';
+import PatternSelector, { PatternConfig } from './components/PatternSelector';
 import SettingsModal from './components/SettingsModal';
 import ProgressModal from './components/ProgressModal';
 import { useIpc } from './hooks/useIpc';
@@ -54,7 +54,7 @@ const App: React.FC = () => {
   const [progressMessage, setProgressMessage] = useState('');
 
   const [seriesMode, setSeriesMode] = useState(false);
-  const [pattern, setPattern] = useState<{ titleIdx: number; seasonIdx?: number; episodeIdx: number; } | null>(null);
+  const [pattern, setPattern] = useState<PatternConfig | null>(null);
   const [patternEditMode, setPatternEditMode] = useState(false);
   const [overwrite, setOverwrite] = useState(false);
   const [patternSeparator, setPatternSeparator] = useState('\\s*-\\s*|\\s+');
@@ -278,7 +278,7 @@ const App: React.FC = () => {
 
   const handlePatternApplied = (
     newMetaList: any[],
-    newPattern: { titleIdx: number; seasonIdx?: number; episodeIdx: number }
+    newPatternConfig: PatternConfig
   ) => {
     const updated = files.map((f, i) => ({
       ...f,
@@ -286,10 +286,12 @@ const App: React.FC = () => {
       status: 'modified' as const,
     }));
     setFiles(updated);
-    setPattern(newPattern);
+    setPattern(newPatternConfig);
     setPatternEditMode(false);
     if (newMetaList.length > 0 && newMetaList[0].show) {
       setActiveSeries(newMetaList[0].show);
+    } else if (newPatternConfig.titleText) {
+      setActiveSeries(newPatternConfig.titleText);
     }
   };
 
