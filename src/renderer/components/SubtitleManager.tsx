@@ -1,5 +1,5 @@
 import React from 'react';
-import { Paper, Title, Table, Badge, Select, TextInput, Checkbox, ActionIcon, Button, Group, Tooltip, Text, Flex } from '@mantine/core';
+import { Paper, Title, Table, Badge, Select, TextInput, Checkbox, ActionIcon, Button, Group, Tooltip, Text, Flex, Box } from '@mantine/core';
 import { IconTrash, IconPlus, IconAlertTriangle } from '@tabler/icons-react';
 
 export interface SubtitleTrack {
@@ -106,37 +106,40 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
 
     return (
       <Table.Tr key={track.id || idx}>
-        <Table.Td style={{ minWidth: 150, maxWidth: 220 }}>
+        <Table.Td style={{ width: 130, padding: '6px 8px' }}>
           <Tooltip label={track.type === 'embedded' ? 'In Videodatei eingebettet' : track.filename || track.path} multiline w={300}>
-            <Badge color={track.type === 'embedded' ? 'blue' : 'green'} variant="light" fullWidth style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
+            <Badge color={track.type === 'embedded' ? 'blue' : 'green'} variant="light" style={{ textOverflow: 'ellipsis', overflow: 'hidden', width: '100%' }}>
               {track.type === 'embedded' ? 'Eingebettet' : track.filename || 'Datei'}
             </Badge>
           </Tooltip>
         </Table.Td>
-        <Table.Td style={{ minWidth: 150 }}>
+        <Table.Td style={{ width: 120, padding: '6px 8px' }}>
           <Select
             data={LANGUAGES}
             value={track.language}
             onChange={(val) => updateTrack(idx, { language: val || 'eng' })}
             searchable
             allowDeselect={false}
+            size="xs"
             comboboxProps={{ withinPortal: true }}
           />
         </Table.Td>
-        <Table.Td style={{ minWidth: 140 }}>
+        <Table.Td style={{ width: 120, padding: '6px 8px' }}>
           <Tooltip label="Interner Spurname im Videoplayer (z.B. 'Forced', 'Vollständig', 'SDH für Hörgeschädigte')." multiline w={220}>
             <TextInput
-              placeholder="z.B. Forced, SDH"
+              placeholder="z.B. Forced"
               value={track.title}
               onChange={(e) => updateTrack(idx, { title: e.currentTarget.value })}
+              size="xs"
             />
           </Tooltip>
         </Table.Td>
-        <Table.Td style={{ minWidth: 200 }}>
-          <Flex gap="md" align="center">
+        <Table.Td style={{ width: 170, padding: '6px 8px' }}>
+          <Flex gap="xs" align="center">
             <Tooltip label="Legt fest, dass diese Untertitelspur beim Abspielen im Player automatisch als Hauptspur ausgewählt wird." multiline w={220}>
               <Checkbox
                 label="Standard"
+                size="xs"
                 checked={track.isDefault}
                 onChange={(e) => updateTrack(idx, { isDefault: e.currentTarget.checked })}
               />
@@ -144,24 +147,27 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
             <Tooltip label="Kennzeichnet Untertitel für fremdsprachige Passagen/Schilder. Wird von Playern auch bei ausgeschalteten Untertiteln eingeblendet." multiline w={230}>
               <Checkbox
                 label="Erzwungen"
+                size="xs"
                 checked={track.isForced}
                 onChange={(e) => updateTrack(idx, { isForced: e.currentTarget.checked })}
               />
             </Tooltip>
           </Flex>
         </Table.Td>
-        <Table.Td style={{ minWidth: hasAnyWarnings ? 160 : 10 }}>
-          {isDurationMismatch && (
-            <Tooltip label={`Dauer Untertitel: ${formatDuration(track.duration)} vs Video: ${formatDuration(videoDuration)}`}>
-              <Badge color="red" leftSection={<IconAlertTriangle size={12} />}>
-                Dauer weicht ab: {formatDuration(track.duration)} vs Video {formatDuration(videoDuration)}
-              </Badge>
-            </Tooltip>
-          )}
-        </Table.Td>
-        <Table.Td style={{ width: 40 }}>
-          <ActionIcon color="red" onClick={() => removeTrack(idx)}>
-            <IconTrash size={18} />
+        {hasAnyWarnings && (
+          <Table.Td style={{ width: 130, padding: '6px 8px' }}>
+            {isDurationMismatch && (
+              <Tooltip label={`Dauer Untertitel: ${formatDuration(track.duration)} vs Video: ${formatDuration(videoDuration)}`}>
+                <Badge color="red" size="xs" leftSection={<IconAlertTriangle size={10} />}>
+                  Dauer abweichend
+                </Badge>
+              </Tooltip>
+            )}
+          </Table.Td>
+        )}
+        <Table.Td style={{ width: 40, padding: '6px 4px', textAlign: 'center' }}>
+          <ActionIcon color="red" variant="subtle" size="sm" onClick={() => removeTrack(idx)}>
+            <IconTrash size={16} />
           </ActionIcon>
         </Table.Td>
       </Table.Tr>
@@ -180,19 +186,21 @@ const SubtitleManager: React.FC<Props> = ({ subtitles = [], onChange, videoDurat
       {subtitles.length === 0 ? (
         <Text c="dimmed" size="sm">Keine Untertitel vorhanden.</Text>
       ) : (
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th style={{ width: '22%' }}>Typ / Datei</Table.Th>
-              <Table.Th style={{ width: '22%' }}>Sprache</Table.Th>
-              <Table.Th style={{ width: '20%' }}>Titel</Table.Th>
-              <Table.Th style={{ width: '24%' }}>Optionen</Table.Th>
-              <Table.Th style={{ width: hasAnyWarnings ? '12%' : '0%' }}>{hasAnyWarnings ? 'Warnungen' : ''}</Table.Th>
-              <Table.Th style={{ width: 40 }}></Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>{rows}</Table.Tbody>
-        </Table>
+        <Box style={{ overflowX: 'auto', width: '100%' }}>
+          <Table striped highlightOnHover style={{ width: '100%', minWidth: 600 }}>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th style={{ width: 130 }}>Typ / Datei</Table.Th>
+                <Table.Th style={{ width: 120 }}>Sprache</Table.Th>
+                <Table.Th style={{ width: 120 }}>Titel</Table.Th>
+                <Table.Th style={{ width: 170 }}>Optionen</Table.Th>
+                {hasAnyWarnings && <Table.Th style={{ width: 130 }}>Warnungen</Table.Th>}
+                <Table.Th style={{ width: 40 }}></Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>{rows}</Table.Tbody>
+          </Table>
+        </Box>
       )}
     </Paper>
   );
