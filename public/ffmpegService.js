@@ -247,9 +247,11 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
           
           if (sub.language) {
             cmd.outputOptions(`-metadata:s:s:${subIdx}`, `language=${sub.language}`);
+            cmd.outputOptions(`-metadata:s:${subIdx}`, `language=${sub.language}`);
           }
           if (sub.title) {
             cmd.outputOptions(`-metadata:s:s:${subIdx}`, `title=${sub.title}`);
+            cmd.outputOptions(`-metadata:s:${subIdx}`, `title=${sub.title}`);
           }
           
           const dispositions = [];
@@ -257,9 +259,9 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
           if (sub.isForced || sub.forced) dispositions.push('forced');
           
           if (dispositions.length > 0) {
-            cmd.outputOptions(`-disposition:s:s:${subIdx}`, dispositions.join('+'));
+            cmd.outputOptions(`-disposition:s:${subIdx}`, dispositions.join('+'));
           } else {
-            cmd.outputOptions(`-disposition:s:s:${subIdx}`, '0');
+            cmd.outputOptions(`-disposition:s:${subIdx}`, '0');
           }
           
           subIdx++;
