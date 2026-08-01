@@ -163,8 +163,35 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
         cmd.inputOptions(['-hwaccel', 'auto']);
       }
 
-      cmd.outputOptions('-map', '0');
-      cmd.outputOptions('-c', 'copy');
+      const hasSubtitlesArray = metadata.subtitles && Array.isArray(metadata.subtitles) && metadata.subtitles.length > 0;
+      const hasCover = metadata.coverPath && fs.existsSync(metadata.coverPath);
+
+      let nextInputIndex = 1;
+
+      if (hasCover) {
+        cmd.input(metadata.coverPath);
+        nextInputIndex++;
+      }
+
+      if (hasSubtitlesArray) {
+        for (const sub of metadata.subtitles) {
+          if (!sub.isEmbedded && sub.type !== 'embedded' && sub.path && fs.existsSync(sub.path)) {
+            sub._inputIdx = nextInputIndex;
+            cmd.input(sub.path);
+            nextInputIndex++;
+          }
+        }
+      }
+
+      if (hasSubtitlesArray) {
+        cmd.outputOptions('-map', '0:v');
+        cmd.outputOptions('-map', '0:a?');
+      } else {
+        cmd.outputOptions('-map', '0');
+      }
+
+      cmd.outputOptions('-c:v', 'copy');
+      cmd.outputOptions('-c:a', 'copy');
       cmd.outputOptions('-map_metadata', '-1');
 
       for (const [key, value] of Object.entries(metadata)) {
@@ -195,43 +222,28 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
         }
       }
 
-      if (metadata.coverPath && fs.existsSync(metadata.coverPath)) {
-        cmd.input(metadata.coverPath);
-        cmd.outputOptions('-map', '-0:v:m:attached_pic'); // Remove old covers from input 0
-        cmd.outputOptions('-map', '1');
-        
-        // Calculate new video stream index
+      if (hasCover) {
+        cmd.outputOptions('-map', '1:0');
         const videoStreams = probeData.streams.filter(s => s.codec_type === 'video');
         const oldCoversCount = videoStreams.filter(s => s.disposition && s.disposition.attached_pic).length;
         const newCoverIndex = videoStreams.length - oldCoversCount;
-        
         cmd.outputOptions(`-disposition:v:${newCoverIndex}`, 'attached_pic');
       }
 
-      let currentMapIndex = 1;
-      if (metadata.coverPath && fs.existsSync(metadata.coverPath)) {
-        currentMapIndex++;
-      }
-
-      if (metadata.subtitles && Array.isArray(metadata.subtitles) && metadata.subtitles.length > 0) {
-        cmd.outputOptions('-map', '-0:s');
-
+      if (hasSubtitlesArray) {
         const ext = path.extname(outputPath).toLowerCase();
         const subtitleCodec = (ext === '.mp4' || ext === '.m4v') ? 'mov_text' : 'copy';
+        cmd.outputOptions('-c:s', subtitleCodec);
 
         let subIdx = 0;
         for (const sub of metadata.subtitles) {
           if (sub.isEmbedded || sub.type === 'embedded') {
             cmd.outputOptions('-map', `0:${sub.streamIndex}`);
-          } else if (sub.path && fs.existsSync(sub.path)) {
-            cmd.input(sub.path);
-            cmd.outputOptions('-map', `${currentMapIndex}:0`);
-            currentMapIndex++;
+          } else if (sub._inputIdx) {
+            cmd.outputOptions('-map', `${sub._inputIdx}:0`);
           } else {
             continue;
           }
-
-          cmd.outputOptions(`-c:s:${subIdx}`, subtitleCodec);
           
           if (sub.language) {
             cmd.outputOptions(`-metadata:s:s:${subIdx}`, `language=${sub.language}`);
@@ -252,6 +264,8 @@ function writeMetadata(inputPath, outputPath, metadata, gpuEnabled = false, onPr
           
           subIdx++;
         }
+      } else {
+        cmd.outputOptions('-c:s', 'copy');
       }
 
       if (onProgress) {
