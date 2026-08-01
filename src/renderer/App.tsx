@@ -565,7 +565,6 @@ const App: React.FC = () => {
               pattern={pattern}
               onClose={() => setShowMatrix(false)}
               onBatchSearch={handleBatchSearch}
-              onApplyManualEdits={handleApplyManualEdits}
             />
           )}
         </AppShell.Main>
